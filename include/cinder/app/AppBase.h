@@ -331,9 +331,25 @@ class AppBase {
 	virtual void		setFullScreen( bool fullScreen, const FullScreenOptions &options = FullScreenOptions() ) { getWindow()->setFullScreen( fullScreen, options ); }
 
 	//! Returns the number of seconds which have elapsed since application launch
-	double				getElapsedSeconds() const { return mTimer.getSeconds(); }
+	//double				getElapsedSeconds() const { return mTimer.getSeconds(); }
+	double				getTrueElapsedSeconds() const { return mTimer.getSeconds(); }
+	double				getElapsedSeconds() const {
+		return mDoPlaybackForCapture ? mFrameCount / mCaptureFrameRate : mTimer.getSeconds();
+	}
 	//! Returns the number of animation frames which have elapsed since application launch
 	uint32_t			getElapsedFrames() const { return mFrameCount; }
+	
+	void setPlaybackForCapture ( bool doPlaybackForCapture )  {
+		mDoPlaybackForCapture = doPlaybackForCapture;
+		mFpsLastSampleTime = getElapsedSeconds();
+		mFpsLastSampleFrame = mFrameCount;
+	}
+	float getCaptureFrameRate() const { return mCaptureFrameRate; }
+	void  setCaptureFrameRate( float frameRate ) { mCaptureFrameRate = frameRate; }
+	
+	float getPlaybackFrameRate() const {
+		return mDoPlaybackForCapture ? mCaptureFrameRate : getFrameRate();
+	}
 
 	//! Returns whether the app is registered to receive multiTouch events from the operating system, configurable via Settings at startup. Disabled by default on desktop platforms, enabled on mobile.
 	bool				isMultiTouchEnabled() const				{ return mMultiTouchEnabled; }
@@ -438,6 +454,9 @@ class AppBase {
 	double					mFpsSampleInterval;
 	bool					mMultiTouchEnabled, mHighDensityDisplayEnabled;
 	RendererRef				mDefaultRenderer;
+	
+	bool					mDoPlaybackForCapture;
+	float					mCaptureFrameRate;
 
 	std::vector<std::string>	mCommandLineArgs;
 	std::shared_ptr<Timeline>	mTimeline;
@@ -495,6 +514,8 @@ inline Area		getWindowBounds() { return AppBase::get()->getWindowBounds(); }
 inline float	getWindowContentScale() { return AppBase::get()->getWindowContentScale(); }
 //! Returns the maximum frame-rate the active App will attempt to maintain.
 inline float	getFrameRate() { return AppBase::get()->getFrameRate(); }
+//! Returns the current frame rate setting - either real-time or capture mode
+inline float	getPlaybackFrameRate() { return AppBase::get()->getPlaybackFrameRate(); }
 //! Sets the maximum frame-rate the active App will attempt to maintain.
 inline void		setFrameRate( float frameRate ) { AppBase::get()->setFrameRate( frameRate ); }
 //! Returns whether the active App is in full-screen mode or not.
